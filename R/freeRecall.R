@@ -20,14 +20,16 @@ getFRP <- function(indat, ll, otherVars=NULL){
 
   indat <- indat[indat$serpos>0 & indat$serpos<=ll & indat$recalled==1,]
 
+  histres <- hist(indat$serpos, breaks = (0:ll)+0.5, plot=F)
+
   retdat <- data.frame(serpos=1:ll,serposf=factor(1:ll),
-                       prob=hist(indat$serpos, breaks = (0:ll)+0.5, plot=F)$density)
+                       prob=histres$density, counts=histres$counts)
 
   if (!is.null(otherVars)){
     for (kk in otherVars){
       retdat <- merge(retdat, otherList[[kk]], by="serpos")
     }
-    names(retdat)[4:(3+length(otherVars))] <- otherVars
+    names(retdat)[5:(4+length(otherVars))] <- otherVars
   }
 
   return(retdat)
