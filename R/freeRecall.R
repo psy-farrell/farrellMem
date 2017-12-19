@@ -91,7 +91,7 @@ getlagCRP <- function (indat, ll, doGroup=NULL, posStruct){
       # It would make sense to make whole thing condition on being in same/diff group?       # So make conditional on group of i being different to i+1, and numerator should
       # be all items from pool in taht condition (ie *given* I make a same/different
       #group transition...)
-      gposseq <- indat$gPos[indat$trial==trial]
+      gposseq <- indat$gpos[indat$trial==trial]
     }
 
     if (length(inseq)>1){
@@ -109,10 +109,10 @@ getlagCRP <- function (indat, ll, doGroup=NULL, posStruct){
           denom[pool-inseq[i-1]+ll] <- denom[pool-inseq[i-1]+ll]+1
 
           if (doGroup){
-            tpool <- intersect(which(gPosN==gPosN[inseq[i-1]]),pool)
+            tpool <- intersect(which(posStruct==posStruct[inseq[i-1]]),pool)
             denomw[tpool-inseq[i-1]+ll] <- denomw[tpool-inseq[i-1]+ll]+1
 
-            tpool <- intersect(which(gPosN!=gPosN[inseq[i-1]]),pool)
+            tpool <- intersect(which(posStruct!=posStruct[inseq[i-1]]),pool)
             denomb[tpool-inseq[i-1]+ll] <- denomb[tpool-inseq[i-1]+ll]+1
 
             if (gposseq[i]==gposseq[i-1]){
