@@ -49,6 +49,7 @@ getFRP <- function(indat, ll, otherVars=NULL){
 #' @param indat data frame containing recalls.
 #' @param ll List length (number).
 #' @param nTrials Number of trials to use in denominator; if NULL, this is worked out from unique(trial_id).
+#' @param serposcol String giving name of column to use as serial position, typically "serpos" or "serposf"
 #' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output. NOT CURRENTLY USED.
 #' @return A data frame containing the following:
 #' \describe{
@@ -59,10 +60,11 @@ getFRP <- function(indat, ll, otherVars=NULL){
 #' @examples
 #' (requires dplyr and magrittr):
 #' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getAccFree(.,ll=10))
-#' @importfrom dplyr group_by_at summarise
+#' @importfrom dplyr group_by_at summarise arrange_
 #' @importFrom magrittr '%>%'
+#' @importFrom tidyr complete_
 #' @export
-getAccFree <- function(indat, ll, nTrials=NULL, otherVars=NULL){
+getAccFree <- function(indat, ll, nTrials=NULL, serposcol="serpos", otherVars=NULL){
 
   if (is.null(nTrials)){
     nTrials <- length(unique(indat$trial))
@@ -70,18 +72,22 @@ getAccFree <- function(indat, ll, nTrials=NULL, otherVars=NULL){
 
   # outdf <- ddply(indat, c("serpos",otherVars), summarise, ncor=sum(recalled==1))
   outdf <- indat %>%
-    group_by_at(c("serpos",otherVars)) %>%
+    group_by_at(c(serposcol,otherVars)) %>%
     summarise(ncor=sum(recalled==1),
               ntrials=nTrials)
 
   # fill in any missing serpos
-  missed <- setdiff(1:ll,outdf$serpos)
-  for (sp in missed){
-    outdf <- rbind(outdf, data.frame(serpos=sp,ncor=0))
+  if (is.factor(outdf[,serposcol])){
+    outdf <- complete(outdf, serposcol, fill=list(ncor=0,ntrials=nTrials))
+  } else {
+    missed <- setdiff(1:ll,outdf$serpos)
+    for (sp in missed){
+      outdf <- rbind(outdf, data.frame(serpos=sp,ncor=0,ntrials=nTrials))
+    }
   }
   outdf$pcor <- outdf$ncor/nTrials
 
-  return(outdf)
+  return(dplyr::arrange_(outdf,serposcol))
 }
 
 getlagCRP <- function (indat, ll, doGroup=NULL, posStruct){

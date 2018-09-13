@@ -10,4 +10,5 @@ LazyData: TRUE
 RoxygenNote: 6.1.0
 Imports:
     dplyr,
-    magrittr
+    magrittr,
+    tidyr
