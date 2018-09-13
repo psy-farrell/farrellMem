@@ -59,6 +59,8 @@ getFRP <- function(indat, ll, otherVars=NULL){
 #' @examples
 #' (requires dplyr and magrittr):
 #' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getAccFree(.,ll=10))
+#' @importfrom dplyr group_by_at summarise
+#' @importFrom magrittr '%>%'
 #' @export
 getAccFree <- function(indat, ll, nTrials=NULL, otherVars=NULL){
 
@@ -68,8 +70,15 @@ getAccFree <- function(indat, ll, nTrials=NULL, otherVars=NULL){
 
   # outdf <- ddply(indat, c("serpos",otherVars), summarise, ncor=sum(recalled==1))
   outdf <- indat %>%
-    group_by_at(c("serposf",otherVars)) %>%
-    summarise(ncor=sum(recalled==1), )
+    group_by_at(c("serpos",otherVars)) %>%
+    summarise(ncor=sum(recalled==1),
+              ntrials=nTrials)
+
+  # fill in any missing serpos
+  missed <- setdiff(1:ll,outdf$serpos)
+  for (sp in missed){
+    outdf <- rbind(outdf, data.frame(serpos=sp,ncor=0))
+  }
   outdf$pcor <- outdf$ncor/nTrials
 
   return(outdf)
