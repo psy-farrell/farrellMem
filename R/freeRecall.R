@@ -1,10 +1,19 @@
-# Some useful keyboard shortcuts for package authoring:
-#
-#   Build and Reload Package:  'Cmd + Shift + B'
-#   Check Package:             'Cmd + Shift + E'
-#   Test Package:              'Cmd + Shift + T'
-
-# FRP and acc fn assume that repetitions are coded as -1
+#' Obtain first recall probability function for a set of trials
+#'
+#' @param indat data frame containing recalls.
+#' @param ll List length (number).
+#' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output.
+#' @return A data frame containing the following:
+#' \describe{
+#' \item{serpos}{serial position (as integer)}
+#' \item{serposf}{serial position (as factor)}
+#' \item{prob}{probability of first recall}
+#' \item{counts}{counts of recall}
+#' }
+#' @examples
+#' (requires dplyr and magrittr):
+#' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getFRP(.,ll=10))
+#' @export
 getFRP <- function(indat, ll, otherVars=NULL){
 
   if (!is.null(otherVars)){
@@ -35,13 +44,32 @@ getFRP <- function(indat, ll, otherVars=NULL){
   return(retdat)
 }
 
+#' Obtain accuracy serial position function for a set of trials
+#'
+#' @param indat data frame containing recalls.
+#' @param ll List length (number).
+#' @param nTrials Number of trials to use in denominator; if NULL, this is worked out from unique(trial_id).
+#' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output. NOT CURRENTLY USED.
+#' @return A data frame containing the following:
+#' \describe{
+#' \item{serpos}{serial position (as integer)}
+#' \item{ncor}{numer of items recalled}
+#' \item{prob}{probability of recall of each item (nTrials as denominator)}
+#' }
+#' @examples
+#' (requires dplyr and magrittr):
+#' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getAccFree(.,ll=10))
+#' @export
 getAccFree <- function(indat, ll, nTrials=NULL, otherVars=NULL){
 
   if (is.null(nTrials)){
     nTrials <- length(unique(indat$trial))
   }
 
-  outdf <- ddply(indat, c("serpos",otherVars), summarise, ncor=sum(recalled==1))
+  # outdf <- ddply(indat, c("serpos",otherVars), summarise, ncor=sum(recalled==1))
+  outdf <- indat %>%
+    group_by_at(c("serposf",otherVars)) %>%
+    summarise(ncor=sum(recalled==1), )
   outdf$pcor <- outdf$ncor/nTrials
 
   return(outdf)
