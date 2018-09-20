@@ -1,6 +1,6 @@
 #' Obtain first recall probability function for a set of trials
 #'
-#' @param indat data frame containing recalls.
+#' @param indat data frame containing recalls. This must contain an integer variable named `serpos`
 #' @param ll List length (number).
 #' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output.
 #' @return A data frame containing the following:
@@ -13,14 +13,18 @@
 #' @examples
 #' (requires dplyr and magrittr):
 #' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getFRP(.,ll=10))
+#' @importfrom dplyr group_by_at summarise arrange_
+#' @importFrom magrittr '%>%'
 #' @export
 getFRP <- function(indat, ll, otherVars=NULL){
 
   if (!is.null(otherVars)){
-    otherList <- {}
-    for (kk in otherVars){
-      otherList[[kk]] <- ddply(indat, .(serpos), function(x) getmode(x[,kk]))
-    }
+
+    otherdf <- indat %>%
+      filter(serpos>0 & serpos<=ll) %>%
+      select(serpos,otherVars) %>%
+      group_by(serpos) %>%
+      summarise_all(getmode)
   }
 
   if (!is.null(indat$outpos)){
@@ -34,14 +38,12 @@ getFRP <- function(indat, ll, otherVars=NULL){
   retdat <- data.frame(serpos=1:ll,serposf=factor(1:ll),
                        prob=histres$density, counts=histres$counts)
 
-  if (!is.null(otherVars)){
-    for (kk in otherVars){
-      retdat <- merge(retdat, otherList[[kk]], by="serpos")
-    }
-    names(retdat)[5:(4+length(otherVars))] <- otherVars
-  }
+  return(merge(retdat, otherdf, by="serpos"))
+}
 
-  return(retdat)
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
 #' Obtain accuracy serial position function for a set of trials
@@ -50,12 +52,14 @@ getFRP <- function(indat, ll, otherVars=NULL){
 #' @param ll List length (number).
 #' @param nTrials Number of trials to use in denominator; if NULL, this is worked out from unique(trial_id).
 #' @param serposcol String giving name of column to use as serial position, typically "serpos" or "serposf"
-#' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output. NOT CURRENTLY USED.
+#' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output. If these don't vary by serpos, best to put them in as grouping variables prior to calling getAccFree
 #' @return A data frame containing the following:
 #' \describe{
 #' \item{serpos}{serial position (as integer)}
 #' \item{ncor}{numer of items recalled}
+#' \item{ntrials}{numer of trials}
 #' \item{prob}{probability of recall of each item (nTrials as denominator)}
+#' \item{...}{other variables passed in to otherVars}
 #' }
 #' @examples
 #' (requires dplyr and magrittr):
@@ -76,29 +80,53 @@ getAccFree <- function(indat, ll, nTrials=NULL, serposcol="serpos", otherVars=NU
     summarise(ncor=sum(recalled==1),
               ntrials=nTrials)
 
-  # fill in any missing serpos
+  # # fill in any missing serpos
+  # if (is.factor(outdf[,serposcol])){
+  #   outdf <- complete(outdf, serposcol, fill=list(ncor=0,ntrials=nTrials))
+  # } else {
+  #   missed <- setdiff(1:ll,outdf$serpos)
+  #   for (sp in missed){
+  #     outdf <- rbind(outdf, data.frame(serpos=sp,ncor=0,ntrials=nTrials))
+  #   }
+  # }
+
+  # we now just generate a warning; user should do this outside
   if (is.factor(outdf[,serposcol])){
-    outdf <- complete(outdf, serposcol, fill=list(ncor=0,ntrials=nTrials))
+    missed <- setdiff(as.character(1:ll),outdf$serpos)
   } else {
     missed <- setdiff(1:ll,outdf$serpos)
-    for (sp in missed){
-      outdf <- rbind(outdf, data.frame(serpos=sp,ncor=0,ntrials=nTrials))
-    }
   }
+  if (length(missed)>0){
+    warning("Not all serial positions were present in the data set. Use complete from the tidyr package to fill in missing SPs.")
+  }
+
   outdf$pcor <- outdf$ncor/nTrials
 
   return(dplyr::arrange_(outdf,serposcol))
 }
 
-getlagCRP <- function (indat, ll, doGroup=NULL, posStruct){
-
-  # note change in gpos name to be consistent with serpos
-  # needs trial, outpos (cannot be a factor), serpos (cannot be a factor)
-  # optional: gpos (not a factor)
+#' Obtain lag conditional response probability (lag-CRP) function for a set of trials
+#'
+#' @param indat data frame containing recalls, with variables for trial, outpos (cannot be a factor), serpos (cannot be a factor). Recalls within each trial should be ordered by output position.
+#' @param ll List length (number).
+#' @param otherVars A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output.
+#' @return A data frame containing the following:
+#' \describe{
+#' \item{lag}{lag [from -(ll-1) to (ll-1)]}
+#' \item{prob}{probability at each lag}
+#' \item{lagrec}{probability at each lag (same as prob; for compatability)}
+#' \item{numer}{numerator of lag-CRP function}
+#' \item{denom}{denominator of lag-CRP function}
+#' }
+#' @examples
+#' (requires dplyr and magrittr):
+#' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getlagCRP(.,ll=10))
+#' @importfrom dplyr group_by_at summarise arrange_
+#' @importFrom magrittr '%>%'
+#' @export
+getlagCRP <- function (indat, ll, doGroup=NULL, posStruct=NULL){
 
   indat <- indat[indat$recalled!=0,] # filter out omissions here--don't rely on user to do this
-
-  # the function checks for repetitions CHECK
 
   numer <- rep(0,ll*2-1)
   denom <- numer
@@ -111,6 +139,7 @@ getlagCRP <- function (indat, ll, doGroup=NULL, posStruct){
 
   trials <- unique(indat$trial)
 
+  # this is coded up but not officially implemented (hasn't been checked)
   if (is.null(doGroup)){
     doGroup <- ifelse(is.null(indat$gpos), FALSE, TRUE)
   } else {
@@ -183,8 +212,11 @@ getlagCRP <- function (indat, ll, doGroup=NULL, posStruct){
   numerb[ll] <- NA
   return(data.frame(lag=c(-(ll-1):0,1:(ll-1)),
                     lagrec=numer/denom,
-                    lagrecw=numerw/denomw,
-                    lagrecb=numerb/denomb))
+                    prob=numer/denom,
+                    numer=numer,
+                    denom=denom))
+                    # lagrecw=numerw/denomw,
+                    # lagrecb=numerb/denomb))
 }
 
 # getlagCRPbySP <- function (indat, ll){
