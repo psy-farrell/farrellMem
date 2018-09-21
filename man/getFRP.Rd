@@ -7,7 +7,7 @@
 getFRP(indat, ll, otherVars = NULL)
 }
 \arguments{
-\item{indat}{data frame containing recalls.}
+\item{indat}{data frame containing recalls. This must contain an integer variable named `serpos`}
 
 \item{ll}{List length (number).}
 

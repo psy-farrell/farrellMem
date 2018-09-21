@@ -13,7 +13,7 @@
 #' @examples
 #' (requires dplyr and magrittr):
 #' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getFRP(.,ll=10))
-#' @importfrom dplyr group_by_at summarise arrange_
+#' @importFrom dplyr group_by_at summarise arrange_
 #' @importFrom magrittr '%>%'
 #' @export
 getFRP <- function(indat, ll, otherVars=NULL){
@@ -64,7 +64,7 @@ getmode <- function(v) {
 #' @examples
 #' (requires dplyr and magrittr):
 #' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getAccFree(.,ll=10))
-#' @importfrom dplyr group_by_at summarise arrange_
+#' @importFrom dplyr group_by_at summarise arrange_
 #' @importFrom magrittr '%>%'
 #' @importFrom tidyr complete_
 #' @export
@@ -121,7 +121,7 @@ getAccFree <- function(indat, ll, nTrials=NULL, serposcol="serpos", otherVars=NU
 #' @examples
 #' (requires dplyr and magrittr):
 #' freerec %>% filter(listlen==10) %>% group_by(ID) %>% do(getlagCRP(.,ll=10))
-#' @importfrom dplyr group_by_at summarise arrange_
+#' @importFrom dplyr group_by_at summarise arrange_
 #' @importFrom magrittr '%>%'
 #' @export
 getlagCRP <- function (indat, ll, doGroup=NULL, posStruct=NULL){

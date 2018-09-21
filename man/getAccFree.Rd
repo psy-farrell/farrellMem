@@ -4,7 +4,8 @@
 \alias{getAccFree}
 \title{Obtain accuracy serial position function for a set of trials}
 \usage{
-getAccFree(indat, ll, nTrials = NULL, otherVars = NULL)
+getAccFree(indat, ll, nTrials = NULL, serposcol = "serpos",
+  otherVars = NULL)
 }
 \arguments{
 \item{indat}{data frame containing recalls.}
@@ -13,14 +14,18 @@ getAccFree(indat, ll, nTrials = NULL, otherVars = NULL)
 
 \item{nTrials}{Number of trials to use in denominator; if NULL, this is worked out from unique(trial_id).}
 
-\item{otherVars}{A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output. NOT CURRENTLY USED.}
+\item{serposcol}{String giving name of column to use as serial position, typically "serpos" or "serposf"}
+
+\item{otherVars}{A vector of strings specifying other variables from the data frame (e.g., condition labels) to carry in to output. If these don't vary by serpos, best to put them in as grouping variables prior to calling getAccFree}
 }
 \value{
 A data frame containing the following:
 \describe{
 \item{serpos}{serial position (as integer)}
 \item{ncor}{numer of items recalled}
+\item{ntrials}{numer of trials}
 \item{prob}{probability of recall of each item (nTrials as denominator)}
+\item{...}{other variables passed in to otherVars}
 }
 }
 \description{
