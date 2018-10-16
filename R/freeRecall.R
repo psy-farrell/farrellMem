@@ -38,7 +38,11 @@ getFRP <- function(indat, ll, otherVars=NULL){
   retdat <- data.frame(serpos=1:ll,serposf=factor(1:ll),
                        prob=histres$density, counts=histres$counts)
 
-  return(merge(retdat, otherdf, by="serpos"))
+  if (!is.null(otherVars)){
+    return(merge(retdat, otherdf, by="serpos"))
+  } else {
+    return(retdat)
+  }
 }
 
 getmode <- function(v) {
